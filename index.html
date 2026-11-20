@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arth – paper trading for Indian stocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3EEE3;--surface:#FBF8F1;--ink:#26342A;--muted:#5E6B5C;--line:#E2DAC8;
+  --accent:#3F6B4F;--accent-ink:#fff;--soft:#E7EBDC;--hero:#3F6B4F;--up:#2F7A4F;--down:#A8554F;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151C17;--surface:#1E2822;--ink:#E8EDE2;--muted:#A3B1A0;--line:#2D3A31;--accent:#9CC7A3;--accent-ink:#15201A;--soft:#26332B;--hero:#2F5240;--up:#86C99A;--down:#E39A92;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#151C17;--surface:#1E2822;--ink:#E8EDE2;--muted:#A3B1A0;--line:#2D3A31;--accent:#9CC7A3;--accent-ink:#15201A;--soft:#26332B;--hero:#2F5240;--up:#86C99A;--down:#E39A92;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:32rem;margin:0 auto;padding:1.25rem 1rem 6.5rem}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+header{display:flex;justify-content:space-between;align-items:center;margin:0 .25rem 1rem}
+h1{font-size:1.25rem;font-weight:700;margin:0}
+h1 small{font-weight:500;margin-left:.5rem}
+.link{background:none;border:0;color:var(--muted);font-size:.9rem;padding:.4rem 0}
+.link:hover{color:var(--ink)}
+small{color:var(--muted);font-size:.85rem}
+.up,small.up{color:var(--up)}.down,small.down{color:var(--down)}
+.hero{background:var(--hero);color:#fff;border-radius:24px;padding:1.4rem 1.5rem 1.2rem;margin-top:.9rem}
+.hero p{margin:0}
+.hl,.hs span{color:rgba(255,255,255,.88);font-size:.9rem}
+.big{font-size:clamp(2.2rem,10vw,2.9rem);font-weight:700;line-height:1.15;margin:.15rem 0 .25rem!important}
+.hd{font-size:.95rem;font-weight:500}
+.hero svg{--gc:#fff;display:block;width:100%;height:4.5rem;margin:.75rem 0 .5rem}
+.hero .ln{stroke:#fff}
+.hs{display:flex;gap:2rem}
+.hs strong{display:block;font-weight:600;font-size:1.05rem}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;max-width:32rem;margin:0 auto;background:var(--surface);border-top:1px solid var(--line);padding:.35rem .5rem calc(.35rem + env(safe-area-inset-bottom,0px))}
+.tabs button{flex:1;border:0;background:none;border-radius:12px;padding:.5rem .25rem;font-size:.78rem;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:.15rem}
+.ic{width:1.4rem;height:1.4rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-selected="true"]{color:var(--accent)}
+#q{width:100%;height:3rem;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;padding:0 1rem;margin-bottom:.75rem}
+#q::placeholder{color:var(--muted)}
+ul{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:20px;overflow:hidden}
+li+li{border-top:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:.85rem;width:100%;background:none;border:0;padding:.9rem 1.1rem;text-align:left}
+.row:hover,.row:active{background:var(--soft)}
+.hd2{font-size:.88rem;color:rgba(255,255,255,.88)}
+.pill{margin-left:.5rem;font-size:.72rem;padding:.15rem .55rem;border-radius:999px;background:rgba(255,255,255,.18)}
+.hi{margin:.15rem 0 0;color:var(--muted);font-size:.9rem}
+.chips{display:flex;gap:.5rem;overflow-x:auto;margin:0 0 .75rem;padding-bottom:.25rem}
+.chips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.45rem .9rem;font-size:.85rem;font-weight:600;color:var(--muted)}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.quick{margin:0 0 .9rem}
+.av{flex:none;width:2.5rem;height:2.5rem;border-radius:12px;background:var(--soft);color:var(--accent);font-weight:700;font-size:.85rem;display:grid;place-items:center}
+.nm{flex:1;min-width:0;display:flex;flex-direction:column}
+.nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt{display:flex;flex-direction:column;text-align:right;font-weight:600}
+.static:hover{background:none}
+.setup{background:var(--surface);border-radius:16px;padding:1rem;margin:0 0 1rem}
+.setup label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.5rem}
+.srow{display:flex;gap:.5rem}
+#link{flex:1;min-width:0;height:3rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;font:inherit;padding:0 .8rem}
+#savelink{flex:none;padding:0 1.2rem}
+footer .link{display:inline;padding:0;text-decoration:underline}
+.sync{margin:0 .25rem .3rem;font-size:.78rem;color:var(--muted)}
+.empty{padding:1.5rem 1.25rem;color:var(--muted);text-align:center}
+footer{margin:1.5rem .5rem 0;color:var(--muted);font-size:.85rem}
+#ov,#lg{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.bd{position:absolute;inset:0;background:rgba(20,28,22,.45)}
+.sheet{position:relative;width:100%;max-width:32rem;max-height:92%;overflow:auto;background:var(--surface);border-radius:28px 28px 0 0;padding:1.4rem 1.4rem calc(1.25rem + env(safe-area-inset-bottom,0px))}
+.sheet:focus{outline:none}
+.st{display:flex;justify-content:space-between;align-items:flex-start}
+.st h2{margin:0;font-size:1.15rem;font-weight:700}
+.st .rt{font-size:1.15rem}
+.sheet svg{--gc:var(--accent);display:block;width:100%;height:5.5rem;margin:.75rem 0}
+.sheet .ln{stroke:var(--accent)}
+.ln{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+#hint{margin:0;color:var(--muted);font-size:.9rem}
+.qty{display:flex;align-items:center;gap:.5rem;margin:1rem 0}
+.step{width:2.75rem;height:2.75rem;border-radius:50%;border:0;background:var(--soft);font-size:1.3rem;line-height:1}
+#qty{width:5rem;height:2.75rem;text-align:center;font:inherit;font-weight:600;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:12px}
+#est{margin-left:auto;font-weight:600}
+.acts{display:flex;gap:.6rem}
+.btn{flex:1;height:3rem;border-radius:14px;border:0;font-weight:600;background:var(--soft);color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+#msg{min-height:1.4rem;margin:.75rem 0 .25rem;font-size:.9rem;color:var(--muted)}
+.sheet .link{display:block;margin:0 auto}
+.sheet label{display:block;font-size:.9rem;font-weight:600;margin:.8rem 0 .3rem}
+.sheet input.f{width:100%;height:3rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;font:inherit;padding:0 .8rem}
+.sheet h2+p{margin:.25rem 0 0;color:var(--muted);font-size:.9rem}
+#lg .acts{margin-top:1rem}
+#wl{margin:.25rem 0 0;padding:0;color:var(--accent);font-weight:600;text-align:left}
+.thead{display:flex;justify-content:space-between;padding:.2rem 1.1rem .5rem;color:var(--muted);font-size:.8rem;font-weight:600}
+.thead.h4{display:grid;grid-template-columns:2.2fr 1.3fr 1.3fr 1.5fr;column-gap:.75rem}
+.thead.h4 span+span{text-align:right}
+.hsum{display:flex;justify-content:space-between;gap:1rem;background:var(--surface);border-radius:16px;padding:.9rem 1.1rem;margin-bottom:.75rem}
+.hsum p{margin:0;display:flex;flex-direction:column}
+.hsum b{font-weight:600}
+.hrow{display:grid;grid-template-columns:1fr auto;grid-template-areas:"c1 c3" "c2 c4";gap:.35rem .75rem;align-items:start}
+.hrow span{display:flex;flex-direction:column}
+.c1{grid-area:c1}.c2{grid-area:c2}.c3{grid-area:c3;text-align:right}.c4{grid-area:c4;text-align:right}
+.c1 b{font-weight:600}
+.c2 span,.c3 span,.c4 span{font-weight:600}
+.lb{font-size:.72rem}
+@media (max-width:639px){.thead.h4{display:none}}
+@media (min-width:640px){
+  .hrow{grid-template-columns:2.2fr 1.3fr 1.3fr 1.5fr;grid-template-areas:"c1 c2 c3 c4";column-gap:.75rem;align-items:center}
+  .c2{text-align:right}.lb{display:none}
+}
+@media (min-width:900px){
+  main{max-width:72rem;padding:1.5rem 2rem 6.5rem;display:grid;grid-template-columns:24rem minmax(0,1fr);column-gap:2rem;align-items:start}
+  header{grid-column:1/-1;margin-bottom:1.25rem}
+  .side{position:sticky;top:1.5rem}
+  .hero svg{height:6rem}
+  .tabs{max-width:none;justify-content:center;gap:1rem}
+  .tabs button{flex:0 1 14rem;font-size:.82rem}
+  #ov,#lg{align-items:center}
+  .sheet{border-radius:24px;padding-bottom:1.4rem;max-width:30rem}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Arth<small>paper trading</small></h1><p class="hi" id="hi"></p></div>
+    <span style="display:flex;gap:1rem"><button class="link" id="acct">Log in</button><button class="link" id="reset">Start over</button></span>
+  </header>
+
+  <div class="side">
+  <p class="sync" id="sync" role="status">Loading prices…</p>
+  <p class="sync" id="acc" role="status"></p>
+
+  <div class="setup" id="setup" hidden>
+    <label for="link">Price link from Google Sheets</label>
+    <div class="srow"><input id="link" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" autocomplete="off"><button class="btn primary" id="savelink">Save</button></div>
+  </div>
+
+  <section class="hero">
+    <p class="hl">Portfolio value<span class="pill" id="mk"></span></p>
+    <p class="big" id="total"></p>
+    <p class="hd" id="today"></p>
+    <p class="hd2" id="delta"></p>
+    <svg id="chart" viewBox="0 0 600 112" preserveAspectRatio="none" role="img" aria-label="Portfolio value over time">
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--gc);stop-opacity:.28"/><stop offset="1" style="stop-color:var(--gc);stop-opacity:0"/></linearGradient></defs>
+      <path class="ar" fill="url(#g1)"/><path class="ln"/>
+    </svg>
+    <div class="hs"><p><span>Cash</span><strong id="cash"></strong></p><p><span>Invested</span><strong id="inv"></strong></p></div>
+  </section>
+  </div>
+  <div class="content">
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="mkt" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2"/></svg>Market</button>
+    <button role="tab" data-tab="watch" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Watchlist</button>
+    <button role="tab" data-tab="hold" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Holdings <span id="hc"></span></span></button>
+    <button role="tab" data-tab="log" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+  </div>
+  <input id="q" type="search" placeholder="Search by name or symbol" aria-label="Search stocks" autocomplete="off">
+  <div class="chips" id="chips"><button data-f="up">▲ Top gainers</button><button data-f="down">▼ Top losers</button></div>
+  <div class="hsum" id="hsum" hidden><p><small>Invested</small><b id="hsi"></b></p><p><small>Current value</small><b id="hsc"></b></p><p><small>Total returns</small><b id="hsr"></b></p></div>
+  <div class="thead" id="thead"></div>
+  <ul id="list"></ul>
+
+  <footer>Prices come from your Google Sheet. Google delays NSE prices by up to about 20 minutes, and a published sheet can take a few more minutes to update. If loading fails, the last known prices are shown. Everything here is practice with virtual rupees. <button class="link" id="chlink">Change price link</button></footer>
+</div>
+</main>
+
+<div id="lg" hidden>
+  <div class="bd" data-closelg></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lgt" tabindex="-1">
+    <h2 id="lgt">Your account</h2>
+    <p>Log in to keep your portfolio on all your devices.</p>
+    <label for="api">Backend link (from Apps Script, ends in /exec)</label>
+    <input class="f" id="api" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
+    <label for="un">Name (letters and numbers)</label>
+    <input class="f" id="un" autocomplete="username" autocapitalize="none">
+    <label for="pn">PIN (4 to 8 digits)</label>
+    <input class="f" id="pn" type="password" inputmode="numeric" autocomplete="current-password">
+    <div class="acts"><button class="btn primary" id="dologin">Log in</button><button class="btn" id="doreg">Create account</button></div>
+    <p id="lmsg" role="status"></p>
+    <button class="link" data-closelg>Close</button>
+  </div>
+</div>
+
+<div id="ov" hidden>
+  <div class="bd" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sn" tabindex="-1">
+    <div class="st">
+      <div><h2 id="sn"></h2><small id="ss"></small>
+        <button class="link" id="wl"></button></div>
+      <div class="rt"><span id="sp"></span><small id="sc"></small></div>
+    </div>
+    <svg id="schart" viewBox="0 0 600 88" preserveAspectRatio="none" role="img" aria-label="Recent price movement">
+      <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--gc);stop-opacity:.22"/><stop offset="1" style="stop-color:var(--gc);stop-opacity:0"/></linearGradient></defs>
+      <path class="ar" fill="url(#g2)"/><path class="ln"/>
+    </svg>
+    <p id="hint"></p>
+    <div class="qty">
+      <button class="step" data-d="-1" aria-label="Fewer shares">&minus;</button>
+      <input id="qty" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Number of shares">
+      <button class="step" data-d="1" aria-label="More shares">+</button>
+      <span id="est"></span>
+    </div>
+    <div class="chips quick"><button data-q="1">1</button><button data-q="5">5</button><button data-q="10">10</button><button data-q="25">25</button><button data-q="max">Max I can buy</button><button data-q="own">All I own</button></div>
+    <div class="acts"><button class="btn primary" id="buy">Buy</button><button class="btn" id="sell">Sell</button></div>
+    <p id="msg" role="status"></p>
+    <button class="link" data-close>Close</button>
+  </div>
+</div>
+
+<script>
+const START=1000000, KEY="shanti-sheets-v1", SHEET_URL="";
+const STOCKS=[["RELIANCE","Reliance Industries",1420],["TCS","Tata Consultancy Services",3200],["HDFCBANK","HDFC Bank",990],["INFY","Infosys",1540],["ICICIBANK","ICICI Bank",1400],["SBIN","State Bank of India",880],["BHARTIARTL","Bharti Airtel",1950],["ITC","ITC",410],["LT","Larsen & Toubro",3700],["HINDUNILVR","Hindustan Unilever",2450],["KOTAKBANK","Kotak Mahindra Bank",2100],["MARUTI","Maruti Suzuki",15000],["TITAN","Titan Company",3600],["ASIANPAINT","Asian Paints",2500],["SUNPHARMA","Sun Pharma",1700],["WIPRO","Wipro",260],["TATASTEEL","Tata Steel",165],["ONGC","ONGC",245],["POWERGRID","Power Grid",290],["NESTLEIND","Nestlé India",1250],["AXISBANK","Axis Bank",1150],["BAJFINANCE","Bajaj Finance",1000],["BAJAJFINSV","Bajaj Finserv",2000],["HCLTECH","HCL Technologies",1500],["ULTRACEMCO","UltraTech Cement",12000],["NTPC","NTPC",330],["COALINDIA","Coal India",390],["TECHM","Tech Mahindra",1500],["ADANIENT","Adani Enterprises",2400],["ADANIPORTS","Adani Ports",1400],["JSWSTEEL","JSW Steel",1100],["HINDALCO","Hindalco",800],["GRASIM","Grasim Industries",2700],["CIPLA","Cipla",1500],["DRREDDY","Dr. Reddy's Laboratories",1250],["EICHERMOT","Eicher Motors",6800],["HEROMOTOCO","Hero MotoCorp",5200],["BPCL","BPCL",330],["TATACONSUM","Tata Consumer Products",1100],["BRITANNIA","Britannia Industries",5900],["APOLLOHOSP","Apollo Hospitals",7200],["DIVISLAB","Divi's Laboratories",6000],["SBILIFE","SBI Life Insurance",1900],["HDFCLIFE","HDFC Life Insurance",750],["INDUSINDBK","IndusInd Bank",800],["SHRIRAMFIN","Shriram Finance",650],["TRENT","Trent",4500],["BEL","Bharat Electronics",400],["HAL","Hindustan Aeronautics",4400],["ADANIPOWER","Adani Power",150],["DMART","Avenue Supermarts",4000],["PIDILITIND","Pidilite Industries",3000],["SIEMENS","Siemens",3200],["ABB","ABB India",5200],["HAVELLS","Havells India",1500],["DABUR","Dabur India",520],["GODREJCP","Godrej Consumer Products",1150],["MARICO","Marico",720],["COLPAL","Colgate-Palmolive India",2300],["BERGEPAINT","Berger Paints India",540],["AMBUJACEM","Ambuja Cements",560],["SHREECEM","Shree Cement",25000],["ACC","ACC",1850],["BANKBARODA","Bank of Baroda",270],["PNB","Punjab National Bank",115],["CANBK","Canara Bank",120],["UNIONBANK","Union Bank of India",140],["IDFCFIRSTB","IDFC First Bank",75],["FEDERALBNK","Federal Bank",220],["AUBANK","AU Small Finance Bank",900],["CHOLAFIN","Cholamandalam Investment",1700],["MUTHOOTFIN","Muthoot Finance",3200],["PFC","Power Finance Corporation",400],["RECLTD","REC",370],["IRFC","Indian Railway Finance Corp",125],["IOC","Indian Oil Corporation",165],["GAIL","GAIL (India)",180],["HINDPETRO","HPCL",440],["VEDL","Vedanta",500],["NMDC","NMDC",75],["SAIL","Steel Authority of India",135],["JINDALSTEL","Jindal Steel & Power",1050],["LUPIN","Lupin",2000],["TORNTPHARM","Torrent Pharmaceuticals",3700],["ZYDUSLIFE","Zydus Lifesciences",950],["AUROPHARMA","Aurobindo Pharma",1150],["ALKEM","Alkem Laboratories",5600],["MAXHEALTH","Max Healthcare",1150],["LTIM","LTIMindtree",5800],["PERSISTENT","Persistent Systems",6000],["COFORGE","Coforge",1700],["MPHASIS","Mphasis",2800],["NAUKRI","Info Edge",1350],["INDIGO","InterGlobe Aviation",5800],["IRCTC","IRCTC",720],["TVSMOTOR","TVS Motor",3500],["ASHOKLEY","Ashok Leyland",140],["BOSCHLTD","Bosch",37000],["MOTHERSON","Samvardhana Motherson",100],["DLF","DLF",750]];
+const $=s=>document.querySelector(s);
+const inr=(n,d=2)=>n.toLocaleString("en-IN",{style:"currency",currency:"INR",minimumFractionDigits:d,maximumFractionDigits:d});
+const sgn=n=>(n>=0?"+":"\u2212")+inr(Math.abs(n));
+const pct=n=>(n>=0?"+":"\u2212")+Math.abs(n*100).toFixed(2)+"%";
+const cls=n=>n>0.004?"up":n<-0.004?"down":"";
+const arw=c=>c>0.00005?"▲ ":c<-0.00005?"▼ ":"";
+const nameOf=k=>(STOCKS.find(s=>s[0]===k)||[k,k])[1];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+function fresh(){const price={},open={},sh={};STOCKS.forEach(([k,,v])=>{price[k]=v;open[k]=v;sh[k]=[v,v]});return{cash:START,hold:{},price,open,sh,hist:[START,START],log:[],watch:[]}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s.cash==="number"&&s.hold&&s.price&&s.open&&s.sh&&Array.isArray(s.hist))return s}catch(e){}return null}
+function save(urgent){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}later(urgent?800:600000,urgent)}
+function setSync(t){$("#sync").textContent=t}
+let S=load()||fresh(), sel=null, tab="mkt", lastFocus=null, mf="none";
+if(!Array.isArray(S.log))S.log=[];
+(S.extra||[]).forEach(e=>addStock(...e));
+STOCKS.forEach(([k,,v])=>{if(S.price[k]===undefined){S.price[k]=v;S.open[k]=v;S.sh[k]=[v,v]}});
+
+const invested=()=>Object.entries(S.hold).reduce((a,[k,h])=>a+h.qty*S.price[k],0);
+const total=()=>S.cash+invested();
+
+function draw(svg,a){
+  const lo=Math.min(...a),hi=Math.max(...a),sp=Math.max(hi-lo,Math.abs(hi)*0.003)||1,base=(hi+lo)/2-sp/2,H=+svg.viewBox.baseVal.height;
+  const d=a.map((v,i)=>(i?"L":"M")+(i/(a.length-1)*600).toFixed(1)+" "+((H-8)-((v-base)/sp)*(H-16)).toFixed(1)).join(" ");
+  svg.querySelector(".ln").setAttribute("d",d);
+  svg.querySelector(".ar").setAttribute("d",d+` L600 ${H} L0 ${H} Z`);
+}
+
+function renderList(){
+  const q=$("#q").value.trim().toLowerCase();
+  $("#q").hidden=$("#chips").hidden=tab!=="mkt";document.querySelectorAll("#chips button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===mf));
+  let html;
+  if(tab==="mkt"||tab==="watch"){
+    let rows=STOCKS.filter(([k,n])=>tab==="watch"?W().includes(k):(!q||k.toLowerCase().includes(q)||n.toLowerCase().includes(q))).sort((a,b)=>W().includes(b[0])-W().includes(a[0]));
+    const chg=r=>S.price[r[0]]/S.open[r[0]]-1;
+    if(tab==="mkt"&&mf==="up")rows=rows.filter(r=>chg(r)>0).sort((a,b)=>chg(b)-chg(a));
+    if(tab==="mkt"&&mf==="down")rows=rows.filter(r=>chg(r)<0).sort((a,b)=>chg(a)-chg(b));
+    html=tab==="mkt"&&!q&&mf==="none"?'<li class="empty"><b>Search for any stock</b><br>Type a company name or NSE symbol above, or tap Top gainers or Top losers to see today’s big movers.</li>':tab==="watch"&&!rows.length?'<li class="empty">Your watchlist is empty. Search for a stock in Market, open it, and tap “Add to watchlist”.</li>':rows.length?rows.map(([k,n])=>`<li><button class="row" data-sel="${k}"><span class="av">${k.slice(0,2)}</span><span class="nm"><b>${W().includes(k)?"★ ":""}${esc(n)}</b><small>${k}</small></span><span class="rt"><span data-p="${k}"></span><small data-c="${k}"></small></span></button></li>`).join(""):`<li class="empty">No stocks match \u201c${esc(q)}\u201d. Try a company name or NSE symbol.</li>`;
+  }else{
+    const e=Object.entries(S.hold);
+    html=e.length?e.map(([k,h])=>`<li><button class="row hrow" data-sel="${k}"><span class="c1"><b>${esc(nameOf(k))}</b><small>${h.qty} ${h.qty===1?"share":"shares"}, bought at avg ${inr(h.cost/h.qty)}</small></span><span class="c2"><small class="lb">Now</small><span data-hp="${k}"></span><small data-hc="${k}"></small></span><span class="c3"><small class="lb">Returns</small><span data-hg="${k}"></span><small data-hgp="${k}"></small></span><span class="c4"><small class="lb">Current (Invested)</small><span data-hv="${k}"></span><small data-hi="${k}"></small></span></button></li>`).join(""):'<li class="empty">No holdings yet. Open the Market tab and pick a stock to place your first practice trade.</li>';
+  }
+  if(tab==="log")html=logHtml();
+  const nh=Object.keys(S.hold).length,th=$("#thead");th.className="thead"+(tab==="hold"?" h4":"");$("#hsum").hidden=!(tab==="hold"&&nh);th.hidden=(tab==="hold"&&!nh)||(tab==="mkt"&&!q&&mf==="none")||(tab==="watch"&&!W().length);
+  th.innerHTML=tab==="mkt"||tab==="watch"?"<span>Company</span><span>Market price (1D%)</span>":tab==="hold"?"<span>Company</span><span>Market price (1D%)</span><span>Returns (%)</span><span>Current (Invested)</span>":"<span>Trade</span><span>Amount</span>";
+  $("#list").innerHTML=html;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  update();
+}
+
+const W=()=>S.watch||(S.watch=[]);
+function logHtml(){if(!S.log.length)return '<li class="empty">No trades yet. Each buy and sell you make will be listed here.</li>';return S.log.map(t=>{const d=new Date(t.t).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}),b=t.side==="buy";return `<li><div class="row static"><span class="av">${b?"B":"S"}</span><span class="nm"><b>${b?"Bought":"Sold"} ${t.qty} ${t.k}</b><small>${d} at ${inr(t.p)}</small></span><span class="rt"><span>${inr(t.c)}</span>${b?"":`<small class="${cls(t.pl)}">${t.pl>=0?"Profit":"Loss"} ${inr(Math.abs(t.pl))}</small>`}</span></div></li>`}).join("")}
+function mkt(){const p=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t).value,m=+g("hour")*60+ +g("minute");return !["Sat","Sun"].includes(g("weekday"))&&m>=555&&m<930}
+function update(){
+  const t=total(), d=t-START;
+  $("#total").textContent=inr(t,0);
+  const td=Object.entries(S.hold).reduce((a,[k,h])=>a+h.qty*(S.price[k]-S.open[k]),0);
+  $("#today").textContent=Object.keys(S.hold).length?`Today ${arw(td)}${sgn(td)} (${pct(td/Math.max(1,t-td))})`:"Buy a stock to start tracking today’s change";
+  $("#delta").textContent=Math.abs(d)<0.005?"No overall gains or losses yet":`${sgn(d)} (${pct(d/START)}) overall`;
+  $("#mk").textContent=mkt()?"Market open":"Market closed";
+  $("#cash").textContent=inr(S.cash,0);
+  $("#inv").textContent=inr(invested(),0);
+  const n=Object.keys(S.hold).length;$("#hc").textContent=n?`(${n})`:"";
+  STOCKS.forEach(([k])=>{
+    const p=S.price[k],c=p/S.open[k]-1,pe=document.querySelector(`[data-p="${k}"]`);
+    if(pe){pe.textContent=inr(p);const ce=document.querySelector(`[data-c="${k}"]`);ce.textContent=arw(c)+pct(c);ce.className=cls(c)}
+    const h=S.hold[k],hv=document.querySelector(`[data-hv="${k}"]`);
+    if(h&&hv){const g=h.qty*p-h.cost,q$=n=>document.querySelector(`[data-${n}="${k}"]`);hv.textContent=inr(h.qty*p);q$("hi").textContent="("+inr(h.cost)+")";q$("hp").textContent=inr(p);const hc=q$("hc");hc.textContent=arw(c)+pct(c);hc.className=cls(c);const hg=q$("hg");hg.textContent=sgn(g);hg.className=cls(g);const gp=q$("hgp");gp.textContent="("+pct(g/h.cost)+")";gp.className=cls(g)}
+  });
+  const ci=Object.values(S.hold).reduce((a,h)=>a+h.cost,0),cv=invested(),cr=cv-ci;
+  $("#hsi").textContent=inr(ci);$("#hsc").textContent=inr(cv);const hr=$("#hsr");hr.textContent=ci?`${arw(cr)}${sgn(cr)} (${pct(cr/ci)})`:"₹0.00";hr.className=cls(cr);
+  draw($("#chart"),S.hist);
+  if(sel){
+    const p=S.price[sel],c=p/S.open[sel]-1,own=(S.hold[sel]||{}).qty||0,q=Math.max(0,Math.floor(+$("#qty").value)||0);
+    $("#sn").textContent=nameOf(sel);$("#ss").textContent="NSE: "+sel;$("#wl").textContent=W().includes(sel)?"★ In your watchlist":"☆ Add to watchlist";
+    $("#sp").textContent=inr(p);$("#sc").textContent=arw(c)+pct(c);$("#sc").className=cls(c);
+    const hd=S.hold[sel],avg=hd?hd.cost/hd.qty:0,gl=hd?hd.qty*p-hd.cost:0;
+    $("#hint").textContent=hd?`You own ${own} ${own===1?"share":"shares"}. You bought at an average of ${inr(avg)}; now ${inr(p)}. You are ${gl>=0?"up":"down"} ${inr(Math.abs(gl))} (${pct(gl/hd.cost)}). Your cash covers up to ${Math.floor(S.cash/p)} more.`:`You don’t own any yet. Your cash covers up to ${Math.floor(S.cash/p)} at this price.`;
+    $("#est").textContent=q?`Total ${inr(q*p)}`:"";
+    $("#sell").disabled=own<1;
+    $("#buy").textContent=q?`Buy ${q} for ${inr(q*p,0)}`:"Buy";$("#sell").textContent=q?`Sell ${q} for ${inr(q*p,0)}`:"Sell";
+    draw($("#schart"),S.sh[sel]);
+  }
+}
+
+function openSheet(k){lastFocus=document.activeElement;sel=k;$("#qty").value=1;$("#msg").textContent="";$("#ov").hidden=false;update();$(".sheet").focus()}
+function closeSheet(){sel=null;$("#ov").hidden=true;if(lastFocus&&document.contains(lastFocus))lastFocus.focus()}
+const say=m=>{$("#msg").textContent=m};
+
+function trade(side){
+  const k=sel,p=S.price[k],q=Math.floor(+$("#qty").value);
+  if(!(q>=1))return say("Enter a whole number of shares, 1 or more.");
+  const c=Math.round(q*p*100)/100;
+  if(side==="buy"){
+    if(c>S.cash)return say(`That costs ${inr(c)} and you have ${inr(S.cash)} in cash. Try fewer shares.`);
+    const h=S.hold[k]||{qty:0,cost:0};h.qty+=q;h.cost+=c;S.hold[k]=h;S.cash-=c;S.log.unshift({t:Date.now(),side:"buy",k,qty:q,p,c});
+    say(`Bought ${q} ${k} for ${inr(c)}.`);
+  }else{
+    const h=S.hold[k];
+    if(!h||q>h.qty)return say(`You own ${h?h.qty:0} shares of ${k}. Try fewer.`);
+    const bc=h.cost*q/h.qty;S.log.unshift({t:Date.now(),side:"sell",k,qty:q,p,c,pl:c-bc});h.cost-=bc;h.qty-=q;S.cash+=c;if(h.qty===0)delete S.hold[k];
+    say(`Sold ${q} ${k} for ${inr(c)}.`);
+  }
+  S.cash=Math.round(S.cash*100)/100;
+  save(true);renderList();
+}
+
+let memLink="";
+function getLink(){let s="";try{s=localStorage.getItem("shanti-link")||""}catch(e){}return fixLink(SHEET_URL||s||memLink)}
+function fixLink(u){if(!u)return u;u=u.replace("/pubhtml","/pub");if(/\/pub(\?|$)/.test(u)&&!/output=/.test(u))u+=(u.includes("?")?"&":"?")+"output=csv";return u}
+function num(x){return parseFloat(String(x||"").replace(/[^0-9.]/g,""))}
+function addStock(k,n,v){if(!STOCKS.some(s=>s[0]===k))STOCKS.push([k,n,v]);if(S.price[k]===undefined){S.price[k]=v;S.open[k]=v;S.sh[k]=[v,v]}}
+async function refresh(){
+  const url=getLink(),fail="Couldn’t load prices from your sheet. Showing the last known prices.";
+  if(!url)return setSync("Add your price link below to see delayed live prices. Showing starting prices for now.");
+  try{
+    const txt=await (await fetch(url+(url.includes("?")?"&":"?")+"t="+Date.now())).text();let n=0,added=0;
+    if(/^\s*</.test(txt))return setSync("Your link opens a web page, not CSV data. Republish the sheet as CSV and paste the new link.");
+    txt.trim().split(/\r?\n/).forEach(line=>{
+      const c=line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(x=>x.replace(/^"|"$/g,"").trim());
+      const k=(c[0]||"").toUpperCase().replace(/^NSE:/,""),p=num(c[1]),pv=num(c[2]),nm=(c[3]||"").trim();
+      if(S.price[k]===undefined&&p>0&&k!=="SYMBOL"&&/^[A-Z0-9-]{1,20}$/.test(k)){addStock(k,nm||k,p);(S.extra=S.extra||[]).push([k,nm||k,p]);added++}
+      if(S.price[k]!==undefined&&p>0){S.price[k]=p;if(pv>0)S.open[k]=pv;S.sh[k].push(p);if(S.sh[k].length>60)S.sh[k].shift();n++}
+    });
+    if(!n)return setSync("Your sheet loaded, but no stock prices were found. Check that column A has the symbols and column B has numeric prices.");
+    S.hist.push(Math.round(total()*100)/100);if(S.hist.length>150)S.hist.shift();
+    save();added?renderList():update();
+    setSync("Prices delayed by about 20 minutes. Updated "+n+" of "+STOCKS.length+" stocks. Last checked "+new Date().toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})+".");
+  }catch(e){setSync(fail)}
+}
+
+let armed=false,timer;
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,[data-close],[data-closelg]");if(!t)return;
+  if(t.dataset.sel)openSheet(t.dataset.sel);
+  else if(t.hasAttribute("data-close"))closeSheet();
+  else if(t.hasAttribute("data-closelg"))$("#lg").hidden=true;
+  else if(t.dataset.tab){tab=t.dataset.tab;renderList()}
+  else if(t.dataset.f){mf=mf===t.dataset.f?"none":t.dataset.f;renderList()}
+  else if(t.dataset.q){const p=S.price[sel],v=t.dataset.q==="max"?Math.floor(S.cash/p):t.dataset.q==="own"?(S.hold[sel]||{}).qty||0:+t.dataset.q;$("#qty").value=Math.max(1,v);update()}
+  else if(t.classList.contains("step")){const i=$("#qty");i.value=Math.max(1,(Math.floor(+i.value)||1)+ +t.dataset.d);update()}
+  else if(t.id==="acct"){if(acct){acct=null;try{localStorage.removeItem("arth-acct")}catch(e){}updateAcct()}else{$("#api").value=getApi();$("#lmsg").textContent="";$("#lg").hidden=false;$("#un").focus()}}
+  else if(t.id==="dologin")auth("login");
+  else if(t.id==="doreg")auth("register");
+  else if(t.id==="savelink"){const v=$("#link").value.trim();if(!/^https:\/\//.test(v)){setSync("Paste the full link, starting with https://");return}memLink=v;try{localStorage.setItem("shanti-link",v)}catch(e){}$("#setup").hidden=true;setSync("Loading prices…");refresh()}
+  else if(t.id==="chlink"){$("#setup").hidden=false;$("#link").value=getLink();$("#link").focus()}
+  else if(t.id==="wl"){const w=W(),i=w.indexOf(sel);if(i<0)w.push(sel);else w.splice(i,1);save(true);renderList()}
+  else if(t.id==="buy")trade("buy");
+  else if(t.id==="sell")trade("sell");
+  else if(t.id==="reset"){
+    if(!armed){armed=true;t.textContent="Tap again to start over";timer=setTimeout(()=>{armed=false;t.textContent="Start over"},4000)}
+    else{clearTimeout(timer);armed=false;t.textContent="Start over";S=fresh();save(true);renderList()}
+  }
+});
+document.addEventListener("input",e=>{if(e.target.id==="qty")update();if(e.target.id==="q")renderList()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pn")auth("login");if(e.key==="Escape"&&sel)closeSheet()});
+
+renderList();
+let acct=null,rt=null,memApi="";
+const getApi=()=>{let s="";try{s=localStorage.getItem("arth-api")||""}catch(e){}return s||memApi};
+const setAcc=t=>{$("#acc").textContent=t};
+const greet=()=>{const h=new Date().getHours(),g=h<12?"Good morning":h<17?"Good afternoon":"Good evening";return acct?g+", "+acct.name.charAt(0).toUpperCase()+acct.name.slice(1):g};
+function updateAcct(){$("#hi").textContent=greet();$("#acct").textContent=acct?"Log out ("+acct.name+")":"Log in";setAcc(acct?"Signed in as "+acct.name+". Your portfolio is saved to your Google Sheet.":"Not logged in, so your portfolio is saved on this device only.")}
+async function api(body){const r=await fetch(getApi(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return r.json()}
+function later(ms,urgent){if(!acct)return;if(urgent&&rt){clearTimeout(rt);rt=null}if(!rt)rt=setTimeout(push,ms)}
+async function push(){
+  rt=null;if(!acct)return;
+  const tr=S.log.filter(x=>x.t>(S.synced||0)),mx=tr.reduce((a,x)=>Math.max(a,x.t),S.synced||0);
+  const state={cash:S.cash,hold:S.hold,hist:S.hist,log:S.log.slice(0,150),watch:S.watch||[],extra:S.extra||[],synced:mx};
+  try{
+    const r=await api({a:"save",name:acct.name,pin:acct.pin,state,trades:tr});
+    if(r.ok){S.synced=mx;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}setAcc("Signed in as "+acct.name+". Saved to your Google Sheet.")}
+    else setAcc("Couldn\u2019t save: "+r.error);
+  }catch(e){setAcc("Couldn\u2019t reach your Google Sheet just now. Your changes are safe on this device.")}
+}
+function adopt(st){
+  if(st){const r=JSON.parse(st);(r.extra||[]).forEach(e=>{addStock(...e);S.extra=S.extra||[];if(!S.extra.some(x=>x[0]===e[0]))S.extra.push(e)});S.cash=r.cash;S.hold=r.hold||{};S.hist=r.hist||S.hist;S.log=r.log||[];S.watch=r.watch||[];S.synced=r.synced||0;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  else save(true);
+  renderList();updateAcct();
+}
+async function auth(kind){
+  const name=$("#un").value.trim().toLowerCase(),pin=$("#pn").value.trim(),m=$("#lmsg"),a=$("#api").value.trim();
+  if(!/^https:\/\//.test(a)){m.textContent="Paste your backend link first. It starts with https://";return}
+  memApi=a;try{localStorage.setItem("arth-api",a)}catch(e){}
+  m.textContent="Please wait\u2026";
+  try{
+    if(kind==="register"){const r=await api({a:"register",name,pin});if(!r.ok){m.textContent=r.error;return}}
+    const r=await api({a:"login",name,pin});
+    if(!r.ok){m.textContent=r.error;return}
+    acct={name,pin};try{localStorage.setItem("arth-acct",JSON.stringify(acct))}catch(e){}
+    adopt(r.state);$("#lg").hidden=true;$("#pn").value="";
+  }catch(e){m.textContent="Couldn\u2019t reach the backend. Check the link, and that it is deployed with access set to Anyone."}
+}
+try{const a=JSON.parse(localStorage.getItem("arth-acct")||"null");
+  if(a&&getApi()){acct=a;updateAcct();api({a:"login",name:a.name,pin:a.pin}).then(r=>{if(r.ok)adopt(r.state);else{acct=null;updateAcct();setAcc(r.error)}}).catch(()=>setAcc("Couldn\u2019t reach your Google Sheet. Using the portfolio saved on this device."))}
+  else updateAcct()}catch(e){updateAcct()}
+$("#setup").hidden=!!getLink();refresh();setInterval(refresh,60000);
+</script>
+</body>
+</html>
