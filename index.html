@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151C17" media="(prefers-color-scheme: dark)">
 <title>Arth – paper trading for Indian stocks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,6 +112,16 @@ footer{margin:1.5rem .5rem 0;color:var(--muted);font-size:.85rem}
 .c1 b{font-weight:600}
 .c2 span,.c3 span,.c4 span{font-weight:600}
 .lb{font-size:.72rem}
+.hot{box-shadow:inset 3px 0 0 var(--accent);background:var(--soft)}
+.alert{display:block;width:100%;text-align:left;font:inherit;font-size:.85rem;cursor:pointer;margin:.2rem 0 .6rem;padding:.6rem .8rem;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink)}
+.sec{padding:.7rem 1.1rem .35rem;color:var(--muted);font-size:.8rem;font-weight:600}
+.qr{margin-top:1rem;border-top:1px solid var(--line);padding-top:.9rem}
+.qr h3{margin:0 0 .15rem;font-size:1rem}
+.qrw{overflow-x:auto;margin-top:.5rem}
+#qrt{width:100%;border-collapse:collapse;font-size:.85rem}
+#qrt th{color:var(--muted);font-weight:600;text-align:right;padding:.35rem .4rem}
+#qrt td{padding:.4rem;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+#qrt th:first-child,#qrt td:first-child{text-align:left}
 @media (max-width:639px){.thead.h4{display:none}}
 @media (min-width:640px){
   .hrow{grid-template-columns:2.2fr 1.3fr 1.3fr 1.5fr;grid-template-areas:"c1 c2 c3 c4";column-gap:.75rem;align-items:center}
@@ -137,6 +149,7 @@ footer{margin:1.5rem .5rem 0;color:var(--muted);font-size:.85rem}
   <div class="side">
   <p class="sync" id="sync" role="status">Loading prices…</p>
   <p class="sync" id="acc" role="status"></p>
+  <button class="alert" id="alert" hidden></button>
 
   <div class="setup" id="setup" hidden>
     <label for="link">Price link from Google Sheets</label>
@@ -161,10 +174,12 @@ footer{margin:1.5rem .5rem 0;color:var(--muted);font-size:.85rem}
     <button role="tab" data-tab="mkt" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2"/></svg>Market</button>
     <button role="tab" data-tab="watch" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Watchlist</button>
     <button role="tab" data-tab="hold" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span>Holdings <span id="hc"></span></span></button>
+    <button role="tab" data-tab="res" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5zM9 8h6M9 12h6M9 16h4"/></svg>Results</button>
     <button role="tab" data-tab="log" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
   </div>
   <input id="q" type="search" placeholder="Search by name or symbol" aria-label="Search stocks" autocomplete="off">
   <div class="chips" id="chips"><button data-f="up">▲ Top gainers</button><button data-f="down">▼ Top losers</button></div>
+  <div class="chips" id="rchips"><button data-rs="np">Biggest profit</button><button data-rs="yo">Best growth</button><button data-rs="az">A–Z</button></div>
   <div class="hsum" id="hsum" hidden><p><small>Invested</small><b id="hsi"></b></p><p><small>Current value</small><b id="hsc"></b></p><p><small>Total returns</small><b id="hsr"></b></p></div>
   <div class="thead" id="thead"></div>
   <ul id="list"></ul>
@@ -212,6 +227,7 @@ footer{margin:1.5rem .5rem 0;color:var(--muted);font-size:.85rem}
     <div class="chips quick"><button data-q="1">1</button><button data-q="5">5</button><button data-q="10">10</button><button data-q="25">25</button><button data-q="max">Max I can buy</button><button data-q="own">All I own</button></div>
     <div class="acts"><button class="btn primary" id="buy">Buy</button><button class="btn" id="sell">Sell</button></div>
     <p id="msg" role="status"></p>
+    <div class="qr" id="qr" hidden><h3>Quarterly results</h3><small id="qrs"></small><div class="qrw"><table id="qrt"></table></div></div>
     <button class="link" data-close>Close</button>
   </div>
 </div>
@@ -224,6 +240,7 @@ const inr=(n,d=2)=>n.toLocaleString("en-IN",{style:"currency",currency:"INR",min
 const sgn=n=>(n>=0?"+":"\u2212")+inr(Math.abs(n));
 const pct=n=>(n>=0?"+":"\u2212")+Math.abs(n*100).toFixed(2)+"%";
 const cls=n=>n>0.004?"up":n<-0.004?"down":"";
+const ALERT=0.03;
 const arw=c=>c>0.00005?"▲ ":c<-0.00005?"▼ ":"";
 const nameOf=k=>(STOCKS.find(s=>s[0]===k)||[k,k])[1];
 const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
@@ -232,7 +249,7 @@ function fresh(){const price={},open={},sh={};STOCKS.forEach(([k,,v])=>{price[k]
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s.cash==="number"&&s.hold&&s.price&&s.open&&s.sh&&Array.isArray(s.hist))return s}catch(e){}return null}
 function save(urgent){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}later(urgent?800:600000,urgent)}
 function setSync(t){$("#sync").textContent=t}
-let S=load()||fresh(), sel=null, tab="mkt", lastFocus=null, mf="none";
+let S=load()||fresh(), sel=null, tab="mkt", lastFocus=null, mf="none", rs="np";
 if(!Array.isArray(S.log))S.log=[];
 (S.extra||[]).forEach(e=>addStock(...e));
 STOCKS.forEach(([k,,v])=>{if(S.price[k]===undefined){S.price[k]=v;S.open[k]=v;S.sh[k]=[v,v]}});
@@ -249,21 +266,21 @@ function draw(svg,a){
 
 function renderList(){
   const q=$("#q").value.trim().toLowerCase();
-  $("#q").hidden=$("#chips").hidden=tab!=="mkt";document.querySelectorAll("#chips button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===mf));
+  $("#q").hidden=tab!=="mkt"&&tab!=="res";$("#chips").hidden=tab!=="mkt";$("#rchips").hidden=tab!=="res";document.querySelectorAll("#rchips button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.rs===rs));document.querySelectorAll("#chips button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===mf));
   let html;
   if(tab==="mkt"||tab==="watch"){
     let rows=STOCKS.filter(([k,n])=>tab==="watch"?W().includes(k):(!q||k.toLowerCase().includes(q)||n.toLowerCase().includes(q))).sort((a,b)=>W().includes(b[0])-W().includes(a[0]));
     const chg=r=>S.price[r[0]]/S.open[r[0]]-1;
     if(tab==="mkt"&&mf==="up")rows=rows.filter(r=>chg(r)>0).sort((a,b)=>chg(b)-chg(a));
     if(tab==="mkt"&&mf==="down")rows=rows.filter(r=>chg(r)<0).sort((a,b)=>chg(a)-chg(b));
-    html=tab==="mkt"&&!q&&mf==="none"?'<li class="empty"><b>Search for any stock</b><br>Type a company name or NSE symbol above, or tap Top gainers or Top losers to see today’s big movers.</li>':tab==="watch"&&!rows.length?'<li class="empty">Your watchlist is empty. Search for a stock in Market, open it, and tap “Add to watchlist”.</li>':rows.length?rows.map(([k,n])=>`<li><button class="row" data-sel="${k}"><span class="av">${k.slice(0,2)}</span><span class="nm"><b>${W().includes(k)?"★ ":""}${esc(n)}</b><small>${k}</small></span><span class="rt"><span data-p="${k}"></span><small data-c="${k}"></small></span></button></li>`).join(""):`<li class="empty">No stocks match \u201c${esc(q)}\u201d. Try a company name or NSE symbol.</li>`;
+    html=tab==="mkt"&&!q&&mf==="none"?emptyMarket():tab==="watch"&&!rows.length?'<li class="empty">Your watchlist is empty. Search for a stock in Market, open it, and tap “Add to watchlist”.</li>':rows.length?rows.map(([k,n])=>`<li><button class="row" data-sel="${k}"><span class="av">${k.slice(0,2)}</span><span class="nm"><b>${W().includes(k)?"★ ":""}${esc(n)}</b><small>${k}</small></span><span class="rt"><span data-p="${k}"></span><small data-c="${k}"></small></span></button></li>`).join(""):`<li class="empty">No stocks match \u201c${esc(q)}\u201d. Try a company name or NSE symbol.</li>`;
   }else{
     const e=Object.entries(S.hold);
     html=e.length?e.map(([k,h])=>`<li><button class="row hrow" data-sel="${k}"><span class="c1"><b>${esc(nameOf(k))}</b><small>${h.qty} ${h.qty===1?"share":"shares"}, bought at avg ${inr(h.cost/h.qty)}</small></span><span class="c2"><small class="lb">Now</small><span data-hp="${k}"></span><small data-hc="${k}"></small></span><span class="c3"><small class="lb">Returns</small><span data-hg="${k}"></span><small data-hgp="${k}"></small></span><span class="c4"><small class="lb">Current (Invested)</small><span data-hv="${k}"></span><small data-hi="${k}"></small></span></button></li>`).join(""):'<li class="empty">No holdings yet. Open the Market tab and pick a stock to place your first practice trade.</li>';
   }
-  if(tab==="log")html=logHtml();
-  const nh=Object.keys(S.hold).length,th=$("#thead");th.className="thead"+(tab==="hold"?" h4":"");$("#hsum").hidden=!(tab==="hold"&&nh);th.hidden=(tab==="hold"&&!nh)||(tab==="mkt"&&!q&&mf==="none")||(tab==="watch"&&!W().length);
-  th.innerHTML=tab==="mkt"||tab==="watch"?"<span>Company</span><span>Market price (1D%)</span>":tab==="hold"?"<span>Company</span><span>Market price (1D%)</span><span>Returns (%)</span><span>Current (Invested)</span>":"<span>Trade</span><span>Amount</span>";
+  if(tab==="log")html=logHtml();if(tab==="res")html=resHtml(q);
+  const nh=Object.keys(S.hold).length,th=$("#thead");th.className="thead"+(tab==="hold"||tab==="res"?" h4":"");$("#hsum").hidden=!(tab==="hold"&&nh);th.hidden=(tab==="hold"&&!nh)||(tab==="res"&&!Object.keys(RES).length)||(tab==="mkt"&&!q&&mf==="none")||(tab==="watch"&&!W().length);
+  th.innerHTML=tab==="mkt"||tab==="watch"?"<span>Company</span><span>Market price (1D%)</span>":tab==="hold"?"<span>Company</span><span>Market price (1D%)</span><span>Returns (%)</span><span>Current (Invested)</span>":tab==="res"?"<span>Company</span><span>Sales (₹ crore)</span><span>Net profit (₹ crore)</span><span>Profit vs last year</span>":"<span>Trade</span><span>Amount</span>";
   $("#list").innerHTML=html;
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
   update();
@@ -272,6 +289,42 @@ function renderList(){
 const W=()=>S.watch||(S.watch=[]);
 function logHtml(){if(!S.log.length)return '<li class="empty">No trades yet. Each buy and sell you make will be listed here.</li>';return S.log.map(t=>{const d=new Date(t.t).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}),b=t.side==="buy";return `<li><div class="row static"><span class="av">${b?"B":"S"}</span><span class="nm"><b>${b?"Bought":"Sold"} ${t.qty} ${t.k}</b><small>${d} at ${inr(t.p)}</small></span><span class="rt"><span>${inr(t.c)}</span>${b?"":`<small class="${cls(t.pl)}">${t.pl>=0?"Profit":"Loss"} ${inr(Math.abs(t.pl))}</small>`}</span></div></li>`}).join("")}
 function mkt(){const p=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t).value,m=+g("hour")*60+ +g("minute");return !["Sat","Sun"].includes(g("weekday"))&&m>=555&&m<930}
+let RES={};
+const num2=v=>{const n=parseFloat(String(v||"").replace(/\u2212/g,"-").replace(/[^0-9.\-]/g,""));return isNaN(n)?"":n};
+async function loadResults(){
+  if(!getApi())return;
+  try{
+    const r=await api({a:"results"});if(!r.ok)return;const m={};
+    (r.rows||[]).forEach(c=>{const k=String(c[0]).toUpperCase();(m[k]=m[k]||[]).push({q:String(c[2]),sales:num2(c[3]),np:num2(c[6]),eps:num2(c[7])})});
+    RES=m;if(sel)update();if(tab==="res")renderList();
+  }catch(e){}
+}
+function renderResults(){
+  const box=$("#qr"),r=RES[sel];box.hidden=false;
+  if(!getApi()){$("#qrs").textContent="";$("#qrt").innerHTML="<tr><td>Tap Log in at the top and connect your backend to see quarterly results.</td></tr>";return}
+  $("#qrs").textContent=nameOf(sel)+" ("+sel+"), amounts in \u20b9 crore";
+  if(!r||!r.length){$("#qrt").innerHTML="<tr><td>Results are not available for this company yet.</td></tr>";return}
+  const f=n=>n===""?"\u2013":n.toLocaleString("en-IN");
+  $("#qrt").innerHTML="<thead><tr><th>Quarter</th><th>Sales</th><th>Net profit</th><th>EPS</th><th>Profit vs last year</th></tr></thead><tbody>"+
+    r.slice(-6).reverse().map(x=>{const i=r.indexOf(x),p=r[i-4],yo=p&&p.np>0&&x.np!==""?x.np/p.np-1:null;
+      return `<tr><td>${esc(x.q)}</td><td>${f(x.sales)}</td><td>${f(x.np)}</td><td>${x.eps===""?"\u2013":x.eps}</td><td class="${yo==null?"":cls(yo)}">${yo==null?"\u2013":arw(yo)+pct(yo)}</td></tr>`}).join("")+"</tbody>";
+}
+function mrow(k){return `<li><button class="row" data-sel="${k}"><span class="av">${k.slice(0,2)}</span><span class="nm"><b>${W().includes(k)?"★ ":""}${esc(nameOf(k))}</b><small>${k}</small></span><span class="rt"><span data-p="${k}"></span><small data-c="${k}"></small></span></button></li>`}
+function emptyMarket(){
+  const rec=(S.recent||[]).filter(k=>S.price[k]!==undefined).slice(0,5),pop=["TCS","RELIANCE","HDFCBANK","INFY"].filter(k=>S.price[k]!==undefined),list=rec.length?rec:pop;
+  return '<li class="empty"><b>Search for any stock</b><br>Type a company name or NSE symbol above, or tap Top gainers or Top losers to see today’s big movers.</li><li class="sec">'+(rec.length?"Recently viewed":"Popular stocks")+'</li>'+list.map(mrow).join("");
+}
+function resHtml(q){
+  if(!getApi())return '<li class="empty">Tap Log in at the top and connect your backend to see quarterly results.</li>';
+  let L=Object.keys(RES).map(k=>{const r=RES[k],x=r[r.length-1],p=r[r.length-5];return{k,x,n:nameOf(k),yo:p&&p.np>0&&x.np!==""?x.np/p.np-1:null}});
+  if(!L.length)return '<li class="empty">No results yet. They fill in a few hours after you run the results setup in your Arth Data sheet.</li>';
+  L=L.filter(o=>!q||o.k.toLowerCase().includes(q)||o.n.toLowerCase().includes(q));
+  if(!L.length)return '<li class="empty">No companies match \u201c'+esc(q)+'\u201d.</li>';
+  const np=o=>o.x.np===""?-1e12:o.x.np;
+  L.sort(rs==="az"?(a,b)=>a.n.localeCompare(b.n):rs==="yo"?(a,b)=>(b.yo??-9)-(a.yo??-9):(a,b)=>np(b)-np(a));
+  const f=n=>n===""?"\u2013":n.toLocaleString("en-IN");
+  return L.map(o=>`<li><button class="row hrow" data-sel="${o.k}"><span class="c1"><b>${esc(o.n)}</b><small>${esc(o.x.q)} quarter, ${o.k}</small></span><span class="c2"><small class="lb">Sales</small><span>${f(o.x.sales)}</span></span><span class="c3"><small class="lb">Net profit</small><span>${f(o.x.np)}</span></span><span class="c4"><small class="lb">Profit vs last year</small><span class="${o.yo==null?"":cls(o.yo)}">${o.yo==null?"\u2013":arw(o.yo)+pct(o.yo)}</span></span></button></li>`).join("");
+}
 function update(){
   const t=total(), d=t-START;
   $("#total").textContent=inr(t,0);
@@ -284,12 +337,15 @@ function update(){
   const n=Object.keys(S.hold).length;$("#hc").textContent=n?`(${n})`:"";
   STOCKS.forEach(([k])=>{
     const p=S.price[k],c=p/S.open[k]-1,pe=document.querySelector(`[data-p="${k}"]`);
-    if(pe){pe.textContent=inr(p);const ce=document.querySelector(`[data-c="${k}"]`);ce.textContent=arw(c)+pct(c);ce.className=cls(c)}
+    if(pe){pe.textContent=inr(p);const ce=document.querySelector(`[data-c="${k}"]`);ce.textContent=arw(c)+pct(c);ce.className=cls(c);pe.closest("li").classList.toggle("hot",W().includes(k)&&Math.abs(c)>ALERT)}
     const h=S.hold[k],hv=document.querySelector(`[data-hv="${k}"]`);
     if(h&&hv){const g=h.qty*p-h.cost,q$=n=>document.querySelector(`[data-${n}="${k}"]`);hv.textContent=inr(h.qty*p);q$("hi").textContent="("+inr(h.cost)+")";q$("hp").textContent=inr(p);const hc=q$("hc");hc.textContent=arw(c)+pct(c);hc.className=cls(c);const hg=q$("hg");hg.textContent=sgn(g);hg.className=cls(g);const gp=q$("hgp");gp.textContent="("+pct(g/h.cost)+")";gp.className=cls(g)}
   });
   const ci=Object.values(S.hold).reduce((a,h)=>a+h.cost,0),cv=invested(),cr=cv-ci;
   $("#hsi").textContent=inr(ci);$("#hsc").textContent=inr(cv);const hr=$("#hsr");hr.textContent=ci?`${arw(cr)}${sgn(cr)} (${pct(cr/ci)})`:"₹0.00";hr.className=cls(cr);
+  const hot=W().filter(k=>S.price[k]!==undefined&&Math.abs(S.price[k]/S.open[k]-1)>ALERT),al=$("#alert");
+  al.hidden=!hot.length;
+  if(hot.length)al.textContent="\u26a1 "+hot.length+" watchlist "+(hot.length===1?"stock moved":"stocks moved")+" over 3% today: "+hot.slice(0,4).map(k=>{const c=S.price[k]/S.open[k]-1;return k+" "+arw(c)+pct(c)}).join(", ")+(hot.length>4?" and more":"");
   draw($("#chart"),S.hist);
   if(sel){
     const p=S.price[sel],c=p/S.open[sel]-1,own=(S.hold[sel]||{}).qty||0,q=Math.max(0,Math.floor(+$("#qty").value)||0);
@@ -300,12 +356,12 @@ function update(){
     $("#est").textContent=q?`Total ${inr(q*p)}`:"";
     $("#sell").disabled=own<1;
     $("#buy").textContent=q?`Buy ${q} for ${inr(q*p,0)}`:"Buy";$("#sell").textContent=q?`Sell ${q} for ${inr(q*p,0)}`:"Sell";
-    draw($("#schart"),S.sh[sel]);
+    draw($("#schart"),S.sh[sel]);renderResults();
   }
 }
 
-function openSheet(k){lastFocus=document.activeElement;sel=k;$("#qty").value=1;$("#msg").textContent="";$("#ov").hidden=false;update();$(".sheet").focus()}
-function closeSheet(){sel=null;$("#ov").hidden=true;if(lastFocus&&document.contains(lastFocus))lastFocus.focus()}
+function openSheet(k){lastFocus=document.activeElement;sel=k;S.recent=[k,...(S.recent||[]).filter(x=>x!==k)].slice(0,8);save();$("#qty").value=1;$("#msg").textContent="";$("#ov").hidden=false;update();$(".sheet").focus()}
+function closeSheet(){sel=null;if(tab==="mkt"&&!$("#q").value.trim()&&mf==="none")renderList();$("#ov").hidden=true;if(lastFocus&&document.contains(lastFocus))lastFocus.focus()}
 const say=m=>{$("#msg").textContent=m};
 
 function trade(side){
@@ -335,18 +391,18 @@ async function refresh(){
   const url=getLink(),fail="Couldn’t load prices from your sheet. Showing the last known prices.";
   if(!url)return setSync("Add your price link below to see delayed live prices. Showing starting prices for now.");
   try{
-    const txt=await (await fetch(url+(url.includes("?")?"&":"?")+"t="+Date.now())).text();let n=0,added=0;
+    const txt=await (await fetch(url+(url.includes("?")?"&":"?")+"t="+Date.now())).text();let n=0,added=0,seen=new Set();
     if(/^\s*</.test(txt))return setSync("Your link opens a web page, not CSV data. Republish the sheet as CSV and paste the new link.");
     txt.trim().split(/\r?\n/).forEach(line=>{
       const c=line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(x=>x.replace(/^"|"$/g,"").trim());
       const k=(c[0]||"").toUpperCase().replace(/^NSE:/,""),p=num(c[1]),pv=num(c[2]),nm=(c[3]||"").trim();
       if(S.price[k]===undefined&&p>0&&k!=="SYMBOL"&&/^[A-Z0-9-]{1,20}$/.test(k)){addStock(k,nm||k,p);(S.extra=S.extra||[]).push([k,nm||k,p]);added++}
-      if(S.price[k]!==undefined&&p>0){S.price[k]=p;if(pv>0)S.open[k]=pv;S.sh[k].push(p);if(S.sh[k].length>60)S.sh[k].shift();n++}
+      if(S.price[k]!==undefined&&p>0){S.price[k]=p;if(pv>0)S.open[k]=pv;S.sh[k].push(p);if(S.sh[k].length>60)S.sh[k].shift();n++;seen.add(k)}
     });
     if(!n)return setSync("Your sheet loaded, but no stock prices were found. Check that column A has the symbols and column B has numeric prices.");
     S.hist.push(Math.round(total()*100)/100);if(S.hist.length>150)S.hist.shift();
     save();added?renderList():update();
-    setSync("Prices delayed by about 20 minutes. Updated "+n+" of "+STOCKS.length+" stocks. Last checked "+new Date().toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})+".");
+    setSync("Prices delayed by about 20 minutes. Updated "+seen.size+" of "+STOCKS.length+" stocks. Last checked "+new Date().toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})+".");
   }catch(e){setSync(fail)}
 }
 
@@ -356,7 +412,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.sel)openSheet(t.dataset.sel);
   else if(t.hasAttribute("data-close"))closeSheet();
   else if(t.hasAttribute("data-closelg"))$("#lg").hidden=true;
-  else if(t.dataset.tab){tab=t.dataset.tab;renderList()}
+  else if(t.dataset.tab){tab=t.dataset.tab;$("#q").value="";renderList()}
+  else if(t.dataset.rs){rs=t.dataset.rs;renderList()}
   else if(t.dataset.f){mf=mf===t.dataset.f?"none":t.dataset.f;renderList()}
   else if(t.dataset.q){const p=S.price[sel],v=t.dataset.q==="max"?Math.floor(S.cash/p):t.dataset.q==="own"?(S.hold[sel]||{}).qty||0:+t.dataset.q;$("#qty").value=Math.max(1,v);update()}
   else if(t.classList.contains("step")){const i=$("#qty");i.value=Math.max(1,(Math.floor(+i.value)||1)+ +t.dataset.d);update()}
@@ -366,6 +423,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="savelink"){const v=$("#link").value.trim();if(!/^https:\/\//.test(v)){setSync("Paste the full link, starting with https://");return}memLink=v;try{localStorage.setItem("shanti-link",v)}catch(e){}$("#setup").hidden=true;setSync("Loading prices…");refresh()}
   else if(t.id==="chlink"){$("#setup").hidden=false;$("#link").value=getLink();$("#link").focus()}
   else if(t.id==="wl"){const w=W(),i=w.indexOf(sel);if(i<0)w.push(sel);else w.splice(i,1);save(true);renderList()}
+  else if(t.id==="alert"){tab="watch";renderList()}
   else if(t.id==="buy")trade("buy");
   else if(t.id==="sell")trade("sell");
   else if(t.id==="reset"){
@@ -374,7 +432,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("input",e=>{if(e.target.id==="qty")update();if(e.target.id==="q")renderList()});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pn")auth("login");if(e.key==="Escape"&&sel)closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pn")auth("login");if(e.key==="/"&&!/INPUT|TEXTAREA/.test(e.target.tagName)&&!sel){e.preventDefault();tab="mkt";renderList();$("#q").focus()}if(e.key==="Escape"&&sel)closeSheet()});
 
 renderList();
 let acct=null,rt=null,memApi="";
@@ -409,13 +467,13 @@ async function auth(kind){
     const r=await api({a:"login",name,pin});
     if(!r.ok){m.textContent=r.error;return}
     acct={name,pin};try{localStorage.setItem("arth-acct",JSON.stringify(acct))}catch(e){}
-    adopt(r.state);$("#lg").hidden=true;$("#pn").value="";
+    adopt(r.state);$("#lg").hidden=true;$("#pn").value="";loadResults();
   }catch(e){m.textContent="Couldn\u2019t reach the backend. Check the link, and that it is deployed with access set to Anyone."}
 }
 try{const a=JSON.parse(localStorage.getItem("arth-acct")||"null");
   if(a&&getApi()){acct=a;updateAcct();api({a:"login",name:a.name,pin:a.pin}).then(r=>{if(r.ok)adopt(r.state);else{acct=null;updateAcct();setAcc(r.error)}}).catch(()=>setAcc("Couldn\u2019t reach your Google Sheet. Using the portfolio saved on this device."))}
   else updateAcct()}catch(e){updateAcct()}
-$("#setup").hidden=!!getLink();refresh();setInterval(refresh,60000);
+$("#setup").hidden=!!getLink();refresh();setInterval(refresh,60000);loadResults();setInterval(loadResults,1800000);
 </script>
 </body>
 </html>
